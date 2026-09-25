@@ -1,14 +1,14 @@
+from typing import dict, list
+
+from fastapi import APIRouter, FastAPI, HTTPException
 from pydantic import BaseModel
-from typing import List
-from fastapi import FastAPI
-from fastapi import APIRouter, HTTPException
 
 
 # Modelo base para produto
 class ProdutoBase(BaseModel):
     nome: str
     categoria: str
-    tags: List[str]
+    tags: list[str]
 
 
 # Modelo para criar um produto
@@ -23,13 +23,13 @@ class Produto(ProdutoBase):
 
 # Modelo para histórico de compras do usuário
 class HistoricoCompras(BaseModel):
-    produtos_ids: List[int]
+    produtos_ids: list[int]
 
 
 # Modelo para preferências do usuário
 class Preferencias(BaseModel):
-    categorias: List[str] | None = None
-    tags: List[str] | None = None
+    categorias: list[str] | None = None
+    tags: list[str] | None = None
 
 
 # Modelo base para um usuário
@@ -38,17 +38,17 @@ class Usuario(BaseModel):
     nome: str
 
 
-produtos = []
-contador_produto = 1
+produtos: list[Produto] = []
+contador_produto: int = 1
 
-usuarios = []
-contador_usuario = 1
+usuarios: list[Usuario] = []
+contador_usuario: int = 1
 
 
-MENSAGEM_HOME = "Bem-vindo à API de Recomendação de Produtos"
+MENSAGEM_HOME: str = "Bem-vindo à API de Recomendação de Produtos"
 
 # Histórico de compras em memória
-historico_de_compras = {}
+historico_de_compras: dict[int, list[int]] = {}
 
 # Criando o App
 app = FastAPI()
@@ -56,14 +56,13 @@ app = FastAPI()
 
 # Iniciando o servidor
 @app.get("/")
-def home():
-    global MENSAGEM_HOME
+def home() -> dict[str, str]:
     return {"mensagem": MENSAGEM_HOME}
 
 
 # Rota para cadastrar produtos
 @app.post("/produtos/", response_model=Produto)
-def criar_produto(produto: CriarProduto):
+def criar_produto(produto: CriarProduto) -> Produto:
     global contador_produto
     novo_produto = Produto(id=contador_produto, **produto.model_dump())
     produtos.append(novo_produto)
@@ -72,14 +71,16 @@ def criar_produto(produto: CriarProduto):
 
 
 # Rota para listar todos os produtos
-@app.get("/produtos/", response_model=List[Produto])
-def listar_produtos():
+@app.get("/produtos/", response_model=list[Produto])
+def listar_produtos() -> list[Produto]:
     return produtos
 
 
 # Rota para simular a criação do histórico de compras de um usuário
 @app.post("/historico_compras/{usuario_id}")
-def adicionar_historico_compras(usuario_id: int, compras: HistoricoCompras):
+def adicionar_historico_compras(
+    usuario_id: int, compras: HistoricoCompras
+) -> dict[str, str]:
     if usuario_id not in [usuario.id for usuario in usuarios]:
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
     historico_de_compras[usuario_id] = compras.produtos_ids
@@ -87,8 +88,8 @@ def adicionar_historico_compras(usuario_id: int, compras: HistoricoCompras):
 
 
 # Rota para recomendações de produtos
-@app.post("/recomendacoes/{usuario_id}", response_model=List[Produto])
-def recomendar_produtos(usuario_id: int, preferencias: Preferencias):
+@app.post("/recomendacoes/{usuario_id}", response_model=list[Produto])
+def recomendar_produtos(usuario_id: int, preferencias: Preferencias) -> list[Produto]:
     if usuario_id not in historico_de_compras:
         raise HTTPException(
             status_code=404, detail="Histórico de compras não encontrado"
@@ -119,7 +120,7 @@ def recomendar_produtos(usuario_id: int, preferencias: Preferencias):
 
 # Rota para cadastrar usuários
 @app.post("/usuarios/", response_model=Usuario)
-def criar_usuario(nome: str):
+def criar_usuario(nome: str) -> Usuario:
     global contador_usuario
     novo_usuario = Usuario(id=contador_usuario, nome=nome)
     usuarios.append(novo_usuario)
@@ -128,6 +129,6 @@ def criar_usuario(nome: str):
 
 
 # Rota para listar usuários
-@app.get("/usuarios/", response_model=List[Usuario])
-def listar_usuarios():
+@app.get("/usuarios/", response_model=list[Usuario])
+def listar_usuarios() -> list[Usuario]:
     return usuarios
